@@ -124,25 +124,16 @@ Poker.prototype = {
     },
     deal:function(){
       if(this.bet > 0){
+        for(var i in this.hand){
+          if(!this.hand[i].hold){
+            this.hand[i].card = this.deck.dealCard() || this.hand[i].card;
+            this.hand[i].flip = true;
+            this.hand[i].draw();
+          }
+        }
         if(!this.started){
           this.started = true;
-          for(var i in this.hand){
-            if(!this.hand[i].hold){
-              var card = this.deck.dealCard();
-              this.hand[i].card = card || this.hand[i].card;
-              this.hand[i].flip = true;
-              this.hand[i].draw();
-            }
-          }
         }else{
-          for(var i in this.hand){
-            if(!this.hand[i].hold){
-              var card = this.deck.dealCard();
-              this.hand[i].card = card || this.hand[i].card;
-              this.hand[i].flip = true;
-              this.hand[i].draw();
-            }
-          }
           var result = this.checkHand();
           this.resetHand();
           this.drawStatus(this.isWinner(result.result));
