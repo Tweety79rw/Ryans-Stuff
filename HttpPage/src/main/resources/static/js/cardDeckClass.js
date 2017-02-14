@@ -1,28 +1,13 @@
 function CardDeckClass()
 {
-	//this.cardBack = new WriteableBitmap(new BitmapImage(new Uri("pack://application:,,,/images/animal-grab-back.jpg")));
 	this.cardDeck = new Array();
 	this.currentCard = 0;
 	this.buildDeck();
-	//this.reverseCardImage = cardImage.ToDictionary(x => x.Value, x => x.Key);
 	this.shuffle();
-}
-		
-		/*class CardDeckClass
-    {
-        Dictionary<int,CroppedBitmap> cardImage = new Dictionary<int, CroppedBitmap>();
-        Dictionary<CroppedBitmap, int> reverseCardImage = new Dictionary<CroppedBitmap, int>();
-        var _image = new SpriteSheet(new BitmapImage(new Uri("pack://application:,,,/images/windows-playing-cards.png")));
-        var cardBack;
-        var image;
-        private List<int> cardDeck = new List<int>();
-        MathRandom random = new Math.random();
-        var currentCard;*/
-        
+}   
         
 CardDeckClass.prototype.buildDeck = function()
 {
-	//image = new CroppedBitmap(cardBack, new System.Windows.Int32Rect(0, 0, cardBack.PixelWidth, cardBack.PixelHeight));
 	var count = 0;
 	for(i = 0; i < 4; i++)
 	{
@@ -34,12 +19,8 @@ CardDeckClass.prototype.buildDeck = function()
 				y:i
 			};
 			this.cardDeck.push(card);
-			//this.cardDeck.Add(count);
-			//cardImage.Add(count++, _image.GetBitmap(j * (_image.imageWidth() / 13), i * (_image.imageHeight() / 4), (_image.imageWidth() / 13), (_image.imageHeight() / 4)));
-
 		}
 	}
-	//cardImage.Add(count++, image);
 };
 CardDeckClass.prototype.shuffle = function()
 {
@@ -89,12 +70,4 @@ CardDeckClass.prototype.getCardNumber = function(value) {
 CardDeckClass.prototype.getCardCoords = function(value) {
 	return [value.x,value.y];
 };
-/*CardDeckClass.prototype.getCardImage = function(value)
-{
-	return cardImage[value];
-};
-CardDeckClass.prototype.getImageNumber = function(value)
-{
-	return reverseCardImage[value];
-};*/
     
