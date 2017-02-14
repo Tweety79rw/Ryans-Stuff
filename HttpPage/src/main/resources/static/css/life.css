@@ -1,0 +1,22 @@
+
+body {
+-moz-user-select     : none;
+ -khtml-user-select   : none;
+ -webkit-user-select  : none;
+ -o-user-select       : none;
+ user-select          : none;
+
+}
+
+rect {
+  fill: none;
+  pointer-events: all;
+}
+.cell.alive {
+  fill: #000;
+  stroke: #000;
+}
+.cell.dead {
+  fill: #ddd;
+  stroke: #999;
+}

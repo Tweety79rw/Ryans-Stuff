@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Video Poker by Ryan</title>
+    <!-- link rel="stylesheet" type="text/css" href="/css/poker.css"-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.js"></script>
+    <script src = "/js/pokerModelClass.js"></script>
+    <!-- script type="text/javascript" src = "/js/pokerViewModelClass.js"></script-->
+    
+    <noscript>JavaScript is off. Please enable to view full site.</noscript>
+    <script src = "/js/cardDeckClass.js"></script>
+    <script src="/js/poker.js"></script>
+  </head>
+  <body>
+    <div class="ui menu">
+     <div class="item">
+      <a href="/" class='ui header'>Ryan's Stuff</a>
+     </div>
+     <div class="right menu">
+      <div class="item">
+        <div id='donationButton'>
+          <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+            <input type="hidden" name="cmd" value="_s-xclick">
+            <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----">
+            <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+            <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+          </form>
+        </div>
+      </div>
+      <div class="item">
+        <div id='help' class='ui icon basic button'><i class="ui circle help icon"></i></div>
+      </div>
+     </div>
+    </div>
+    <div id='main-container' class='ui container'>
+      <h1 class="ui top attached center aligned header">Video Poker</h1>
+      <div class="ui attached segment">
+        <div class="ui two column grid">
+          <div class="column">
+            <div class="ui two column grid">
+              <div class="column">
+                <div class="ui fluid buttons">
+                  <div id="betBtn" class="ui button">Bet</div>
+                  <div id="maxBetBtn" class="ui button">Max Bet</div>
+                  <div id="clearBetBtn" class="ui button">Clear Bet</div>
+                </div>
+              </div>
+              <div class="column">
+                <div class="ui three column grid">
+                  <div class="column">
+                    <div class="ui label">Betting <span id="betAmount">0</span></div>
+                  </div>
+                  <div class="column">
+                    <div class="ui label">Winnings <span id="winAmount">0</span></div>
+                  </div>
+                  <div class="column">
+                    <div class="ui label">Funds <span id="funds">100</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="column">
+            <div id="status" class="ui message">Results will be displayed here</div>
+          </div>
+        </div>
+        <canvas id="canvas"></canvas>
+        <div id="drawBtn" class="ui fluid button">Draw</div>
+      </div>
+    </div>
+    <div id="helpModal" class="ui modal">
+      <i class="close icon"></i>
+      <div class="header">Pay outs</div>
+      <div class="content">
+        <div class="ui list">
+          <div class="item">One Pair = 1 X BET *Winning pair must be jacks or better</div>
+          <div class="item">Two Pair = 2 X BET</div>
+          <div class="item">Three of a Kind = 3 X BET</div>
+          <div class="item">Full House = 9 X BET</div>
+          <div class="item">Four of a Kind  = 25 X BET</div>
+          <div class="item">Flush = 6 X BET</div>
+          <div class="item">Straight = 4 X BET</div>
+          <div class="item">Straight Flush = 50 X BET</div>
+          <div class="item">Royal Flush = 250 X BET</div>
+        </div>
+      </div>
+    </div>
+    <div id="endModal" class="ui modal">
+      <i class="close icon"></i>
+      <div class="header">Game Over</div>
+      <div class="content">
+        <div class="ui center aligned list">
+          <div class="item">Thanks for playing.</div>
+          <div class="item">Play Again?</div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="ui button">No</div>
+        <div id="newGame" class="ui button">Yes</div>
+      </div>
+    </div>
+    <script>
+    	$(document).ready(function(){
+    	  new Poker($('#canvas'));
+    	});
+    </script>
+  </body>
+</html>
