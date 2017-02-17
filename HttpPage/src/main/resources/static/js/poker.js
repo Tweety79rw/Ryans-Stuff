@@ -1,42 +1,21 @@
+//inherit from CardGamblingBase
+Poker.prototype = new CardGamblingBase();
+//reset constructor to this class
+Poker.prototype.constructor=Poker;
 function Poker($canvas){
-  //prototype counts the number of value d found in the array
-  Array.prototype.count = function(d){
-    if(d==null)
-      return this.length; 
-    var a = 0; 
-    for(var i =0;i<this.length;i++){
-      if(this[i]===d)a++;
-    }
-    return a;
-  };
-  Array.prototype.allIndexOf = function(d){
-    var r = [];
-    for(var i = 0;i<this.length;i++){
-      if(this[i]===d)
-        r.push(i);
-    }
-    return r;
-  };
-  this.canvas = $canvas[0];
-  var parent = $canvas.parent();
-  this.canvas.width = parent.width();
-  this.canvas.height = this.canvas.width/5/.74+10;
-  this.cardWidth = parent.width()/5;
-  this.cardHeight = this.cardWidth/.74;
-  this.ctx = this.canvas.getContext("2d");
-  this.deck = new CardDeckClass();
-  this.hand = {};
+  this.setCanvas($canvas);
+  this.setDecks(1);
+  this.hand = [];
   this.initPlayCards();
-  this.funds = 500;  
-  this.bet = 0;
-  this.win = 0;
   this.maxBet = 50;
   this.winMultiplier = 0;
-  this.started = false;
   this.loadImages(this.loadGame);
 }
-
-Poker.prototype = {
+function extend(obj, src) {
+  Object.keys(src).forEach(function(key) { obj[key] = src[key]; });
+  return obj;
+}
+extend(Poker.prototype,  {
     loadGame:function(){
       var _this = this;
       this.updateTextDisplays();
@@ -52,13 +31,13 @@ Poker.prototype = {
         _this.deal();
       });
       $('#betBtn').on('click',function(){
-        _this.placeBet(5);
+        _this.placeBet(5,_this.clearCards,_this.updateTextDisplays);
       });
       $('#maxBetBtn').on('click',function(){
-        _this.placeBet(_this.maxBet);
+        _this.placeBet(_this.maxBet,_this.clearCards,_this.updateTextDisplays);
       });
       $('#clearBetBtn').on('click',function(){
-        _this.placeBet(-_this.bet);
+        _this.placeBet(-_this.bet,_this.clearCards,_this.updateTextDisplays);
       });
       $('#help').on('click',function(){
         $('#helpModal').modal('show');
@@ -71,10 +50,10 @@ Poker.prototype = {
       });
     },
     clearCards:function(){
-      for(var h in this.hand){
-        this.hand[h].flip = false;
-        this.hand[h].draw();
-      }
+      this.hand.forEach(function(h){
+        h.flip = false;
+        h.draw();
+      });
     },
     updateFundsDisplay:function(){
       $('#funds').text(this.funds);
@@ -90,29 +69,6 @@ Poker.prototype = {
       this.updateBetDisplay();
       this.updateWinDisplay();
     },
-    trasferFundBet:function(amt){
-      this.bet += amt;
-      this.funds -= amt;
-    },
-    placeBet:function(amt){
-      if(!this.started && (this.bet < this.maxBet || amt < 0)){
-        this.clearCards();
-        this.win = 0;
-        if(this.funds >= amt){
-          if(this.bet + amt <= this.maxBet){
-            this.trasferFundBet(amt);
-          }else if(this.bet + amt > this.maxBet){
-            var dif = this.maxBet - this.bet;
-            if(dif > 0){
-              this.trasferFundBet(dif);
-            }
-          }
-        }else if(this.funds > 0){
-          this.trasferFundBet(this.funds);
-        }
-      }
-      this.updateTextDisplays();
-    },
     payouts:function(){
       this.win =this.bet*this.winMultiplier;
       this.funds += this.win;
@@ -123,14 +79,15 @@ Poker.prototype = {
         $('#endModal').modal('show');
     },
     deal:function(){
+      var _this = this;    
       if(this.bet > 0){
-        for(var i in this.hand){
-          if(!this.hand[i].hold){
-            this.hand[i].card = this.deck.dealCard() || this.hand[i].card;
-            this.hand[i].flip = true;
-            this.hand[i].draw();
+        this.hand.forEach(function(d){
+          if(!d.hold){
+            d.card = _this.deck.dealCard(1) || _this.hand[i].card;
+            d.flip = true;
+            d.draw();
           }
-        }
+        });
         if(!this.started){
           this.started = true;
         }else{
@@ -153,48 +110,43 @@ Poker.prototype = {
       });
     },
     resetHand:function(){
-      for(var a in this.hand){
-        this.hand[a].hold = false;
-        this.hand[a].draw();
+      this.hand.forEach(function(d){
+        d.hold = false;
+        d.draw();
+      });
+    },
+    drawCardHandler:function(_class){
+      if(this.flip){
+        _class.draw(this.card.x,this.card.y,this.pos.x*_class.cardWidth,0);
+        if(this.hold){
+          _class.drawHold(this.pos.x);
+        }
+      } else{
+        _class.drawBack(this.pos.x*_class.cardWidth,0);
       }
+    },
+    clickCardHandler:function(){
+      if(this.flip){
+        this.hold = !this.hold;
+      }
+      this.draw();
     },
     initPlayCards:function(){
       var _this = this;
       for(var i = 0;i<5;i++){
-        this.hand[i] = {
-            hold:false,
-            flip:false,
-            card:{},
-            pos:i,
-            draw:function(){
-              if(this.flip){
-                _this.draw(this.card.x,this.card.y,this.pos);
-                if(this.hold){
-                  _this.drawHold(this.pos);
-                }
-              } else{
-                _this.drawBack(this.pos);
-              }
-            },
-            click:function(){
-              if(this.flip){
-                this.hold = !this.hold;
-              }
-              this.draw();
-            }
-        }
+        this.hand.push(new Card(i,0,this,this.drawCardHandler,this.clickCardHandler));
       }
     },
     displayCards:function(){
-      for(var i in this.hand){
-        this.hand[i].draw();
-      }
+      this.hand.forEach(function(d){
+        d.draw();
+      });
     },
     flipCards:function(){
-      for(var i in this.hand){
-        this.hand[i].flip = true;
-        this.hand[i].draw();
-      }
+      this.hand.forEach(function(d){
+        d.flip = true;
+        d.draw();
+      });
     },
     drawStatus:function(msg){
       $('#status').text(msg);
@@ -204,13 +156,6 @@ Poker.prototype = {
         var x = Math.floor(evt.offsetX/this.cardWidth);
         this.hand[x].click();
       }
-    },
-    draw:function(imgX,imgY,x){
-      this.ctx.drawImage(this.spriteSheet,imgX*this.spriteSheet.spriteWidth+imgX+1,imgY*this.spriteSheet.spriteHeight+imgY+1,
-          this.spriteSheet.spriteWidth,this.spriteSheet.spriteHeight,x*this.cardWidth,0,this.cardWidth,this.cardHeight);
-    },
-    drawBack:function(x){
-      this.ctx.drawImage(this.backImg,x*this.cardWidth,0,this.cardWidth,this.cardHeight);
     },
     drawHold:function(x){
       this.ctx.beginPath();
@@ -228,41 +173,10 @@ Poker.prototype = {
       this.ctx.strokeText('HOLD',0,0);
       this.ctx.restore();
     },
-    loadImages:function(callback){
-      var _this = this,backLoaded = false,spriteLoaded = false,finished =false;
-      this.backImg = new Image();
-      this.backImg.onload = function(){
-        backLoaded=true;
-        if(spriteLoaded && !finished){
-          finished = true;
-          callback.call(_this);
-        }
-      }
-      this.backImg.src = "/images/animal-grab-back.jpg";
-      this.spriteSheet = new Image();
-      this.spriteSheet.onload = function(){
-        spriteLoaded=true;
-        if(backLoaded && !finished){
-          finished = true;
-          callback.call(_this);
-        }
-      }
-      this.spriteSheet.spriteHeight = 97;
-      this.spriteSheet.spriteWidth = 72;
-      this.spriteSheet.src = "/images/windows-playing-cards.png";
-    },
     checkHand : function(){
-      var exitInner = false;
-      var streight = 0;
-      var royalFlush = 0;
-      this.cardNumbers = [];
-      this.cardSuits = [];
-      for(var a in this.hand){
-        this.cardNumbers.push(this.hand[a].card.number % 13);
-        this.cardSuits.push(Math.floor(this.hand[a].card.number / 13));
-      }
+      this.cardNumbers = this.hand.map(function(d){return d.card.x;});
+      this.cardSuits = this.hand.map(function(d){return d.card.y;});
       var matches = this.cardNumbers.map(function(d,i,a){return a.count(d);});
-      //pair
       var pair = matches.count(2) == 2;
       var wins = [];
       //two pair
@@ -273,57 +187,58 @@ Poker.prototype = {
       wins.push(matches.count(4) == 4?{result:16,arr:matches.allIndexOf(4)}:{result:0,arr:[]});
       //flush
       wins.push(this.cardSuits.map(function(d,i,a){return a.count(d);}).count(5) == 5?{result:17,arr:[0,1,2,3,4]}:{result:0,arr:[]});
-      //pair is jacks or better
+      //pair
       wins.push(pair?{result:13,arr:matches.allIndexOf(2)}:{result:0,arr:[]});
-      
+      var aceHigh = false;
       function consecutiveCards(arr){
         arr.sort(function(a,b) {
           return a - b;
         });
-        
+        aceHigh = (arr[4] == 12 && arr[3] == 11 && arr[2] == 10 && arr[1] == 9 && arr[0] == 0);
+        var result = true;
         var lowest = arr[0];
         for(var i =0;i<arr.length;i++){
-          if(arr[i] != lowest++)
-            return false||(arr[4] == 12 && arr[3] == 11 && arr[2] == 10 && arr[1] == 9 && arr[0] == 0);
+          if(arr[i] != lowest++){
+             result = false || aceHigh;
+             break;
+          }
         }
-        return true;
+        if(result)
+          wins.push({result:18,arr:[0,1,2,3,4]});
+        else
+          wins.push({result:0,arr:[]});
       }
       //uses JSON to deep copy the array so the original array wont be sorted
-      if(consecutiveCards(JSON.parse(JSON.stringify(this.cardNumbers))))
-        wins.push({result:18,arr:[0,1,2,3,4]});
-      else
-        wins.push({result:0,arr:[]});
+      consecutiveCards(JSON.parse(JSON.stringify(this.cardNumbers)));
       
-      if(wins.reduce(function(a,d){return a+d.result;})==35)
-      {
-        if(this.cardNumbers[4] == 12 && this.cardNumbers[0] == 0)
-        {
+      if(wins.reduce(function(a,d){return a+d.result;},0)==35){
+        if(aceHigh){
           wins.push({result:1,arr:[]});
         }
       }
 
       var results = Object.keys(wins).reduce(function(a,d){return a+wins[d].result;},0);
       if(results == 0)
-        results = this.GetHighCard();
+        results = this.GetHighCard(JSON.parse(JSON.stringify(this.cardNumbers)));
       
       var resultIndexs = Object.keys(wins).reduce(function(a,d){return a.concat(wins[d].arr);},[])
       if(results == 13 &&
           !(this.cardNumbers[matches.indexOf(2)] > 9 || this.cardNumbers[matches.indexOf(2)] == 0)){
-        results = this.GetHighCard();
+        results = this.GetHighCard(JSON.parse(JSON.stringify(this.cardNumbers)));
         resultIndexs = [];
       }
       return {result:results,indexArr:resultIndexs};
     },
-    GetHighCard : function()
+    GetHighCard : function(arr)
     {
       var resultsHighCard;
-      this.cardNumbers.sort(function(a,b) {
+      arr.sort(function(a,b) {
         return a - b;
       });
-      if (this.cardNumbers[0] == 0)
+      if (arr[0] == 0)
           resultsHighCard = 0;
         else
-          resultsHighCard = this.cardNumbers[4];
+          resultsHighCard = arr[4];
       return resultsHighCard;
     },
     isWinner:function(result){
@@ -369,4 +284,4 @@ Poker.prototype = {
       }
       return StringResults;
     }
-}
+})
