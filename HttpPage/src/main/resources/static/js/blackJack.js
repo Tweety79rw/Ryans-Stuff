@@ -39,20 +39,32 @@ extend(BlackJack.prototype , {
       $('#hitBtn').on('click',function(evt){
         _this.hit();
       })
+      $('#doubleBtn').on('click',function(evt){
+        _this.double();
+      })
       $('#standBtn').on('click',function(evt){
-        
+        _this.stand();
       })
       $('#splitBtn').on('click',function(evt){
-        
+        console.log('split');
+        _this.split();
       })
     },
     deal:function(){
-      this.start = true;
-      this.dealCards();
+      if(!this.started && this.bet > 0){
+        if(this.deck.size().cardsLeft < 15)
+          this.deck.shuffle();
+        this.clearCardArea();
+        this.playerHand = [];
+        this.dealerHand = [];
+        $('#splitBtn, #doubleBtn').addClass('disabled');
+        this.started = true;
+        this.dealCards();
+      }
     },
     drawCardHandlerPlayer:function(_class){
-      var drawPosX = _class.canvas.width/2+this.pos.x*50,
-        drawPosY = _class.canvas.height/2-_class.cardHeight/2+this.pos.x*10;
+      var drawPosX = _class.canvas.width/2+this.pos.x%5*50,
+        drawPosY = _class.canvas.height/2-_class.cardHeight/2+this.pos.x*10 + Math.floor(this.pos.x/5)*40;
       
       if(this.flip){
         _class.draw(this.card.x,this.card.y,drawPosX,drawPosY);
@@ -60,9 +72,29 @@ extend(BlackJack.prototype , {
         _class.drawBack(drawPosX,drawPosY);
       }
     },
+    drawCardCounts:function(){
+      this.ctx.save();
+      this.ctx.translate(this.canvas.width - this.canvas.width/4,100);
+      this.ctx.textAlign ="center";
+      this.ctx.font = '32px Arial';
+      var textDim = this.ctx.measureText('  ').width;
+      this.ctx.clearRect(-textDim/2-7,-25,textDim+15,(25+3)*2);
+      this.ctx.fillText(this.checkHand(JSON.parse(JSON.stringify(this.playerHand))),0,0);
+      this.ctx.restore();
+    },
+    drawDealerCounts:function(){
+      this.ctx.save();
+      this.ctx.translate(this.canvas.width/4,this.canvas.height/2+100);
+      this.ctx.textAlign ="center";
+      this.ctx.font = '32px Arial';
+      var textDim = this.ctx.measureText('  ').width;
+      this.ctx.clearRect(-textDim/2-7,-25,textDim+15,(25+3)*2);
+      this.ctx.fillText(this.checkHand(JSON.parse(JSON.stringify(this.dealerHand))),0,0);
+      this.ctx.restore();
+    },
     drawCardHandlerDealer:function(_class){
-      var drawPosX = this.pos.x*50,
-        drawPosY = this.pos.x*10;
+      var drawPosX = this.pos.x%5*50,
+        drawPosY = this.pos.x*10+ Math.floor(this.pos.x/5)*40;
       
       if(this.flip){
         _class.draw(this.card.x,this.card.y,drawPosX,drawPosY);
@@ -75,8 +107,44 @@ extend(BlackJack.prototype , {
         this.playerHand.push(new Card(i,0,this,this.drawCardHandlerPlayer,this.clickCardHandler,this.deck.dealCard()));
         this.dealerHand.push(new Card(i,0,this,this.drawCardHandlerDealer,this.clickCardHandler,this.deck.dealCard()));
       }
-      this.flipCards('player');
-      this.flipCards('dealer');
+      this.flipCards('player')();
+      this.flipCards('dealer')();
+      this.preHandcheck();
+    },
+    split:function(){
+      
+    },
+    double:function(){
+      this.trasferFundBet(this.bet);
+      this.hit();
+      this.stand();
+    },
+    preHandcheck:function(){
+      var playerH = this.checkHand(JSON.parse(JSON.stringify(this.playerHand)));
+      var dealerH = this.checkHand(JSON.parse(JSON.stringify(this.dealerHand)));
+      if(playerH == 21&&dealerH == 21){
+        this.payout(1);
+        this.flipCards('dealer')(true);
+        this.started = false;
+      }else if(playerH == 21){
+        this.payout(2.5);
+        this.flipCards('dealer')(true);
+        this.started = false;
+      }else if(dealerH == 21){
+        this.payout(0);
+        this.flipCards('dealer')(true);
+        this.started = false;
+      }else if(playerH == 11||playerH == 10){
+        //double down
+        if(this.funds >= this.bet)
+          $('#doubleBtn').removeClass('disabled');
+        console.log('double down');
+      }else if(this.playerHand.map(function(d){return d.card.x;}).map(function(d,i,a){return a.count(d);}).count(2) == 2){
+        //split
+        console.log('split');
+        $('#splitBtn').removeClass('disabled');
+      }
+        
     },
     flipCards:function(p){
       var _this = this;
@@ -86,26 +154,94 @@ extend(BlackJack.prototype , {
             d.flip = true;
             d.draw();
           });
+          _this.drawCardCounts();
         },
-        'dealer':function(){
+        'dealer':function(reveal){
+          reveal = reveal || false;
           _this.dealerHand.forEach(function(d,i){
-            if(i ==1)
+            if(i ==1||reveal)
               d.flip = true;
             d.draw();
           });
         }
       }
-      a[p]();
+      return a[p];
     },
     hit:function(){
-      this.playerHand.push(new Card(this.playerHand.length,0,this,this.drawCardHandlerPlayer,this.clickCardHandler,this.deck.dealCard()));
-      this.flipCards('player');
-      this.checkHand();
+      if(this.started){
+        this.playerHand.push(new Card(this.playerHand.length,0,this,this.drawCardHandlerPlayer,this.clickCardHandler,this.deck.dealCard()));
+        this.flipCards('player')();
+        if(this.checkHand(JSON.parse(JSON.stringify(this.playerHand))) > 21)
+          this.busted();
+      }
     },
-    checkHand:function(){
-      var count = this.playerHand.reduce(function(a,d){var val = d.card.x+1; if(val > 10)val = 10;return a+val;},0);
+    busted:function(){
+      //draw busted on cards and end hand
+      this.payout(0);
+      this.flipCards('dealer')(true);
+      this.started = false;
+    },
+    checkHands:function(){
+      var playerCount = this.checkHand(JSON.parse(JSON.stringify(this.playerHand)));
+      var dealerCount = this.checkHand(JSON.parse(JSON.stringify(this.dealerHand)));
+      var winTotal = playerCount - dealerCount;
+      if(winTotal == 0){
+        //tie
+        console.log('tie');
+        this.payout(1);
+      }else if(dealerCount > 21 || winTotal >0){
+        //player wins
+        console.log('player wins');
+        this.payout(2);
+      }else{
+        //dealer wins
+        console.log('dealer wins');
+        this.payout(0);
+      }
+      this.started = false;
+    },
+    playerBlackJack:function(){
+      this.payout(2.5);
+    },
+    payout:function(mult){
+      this.win =this.bet*mult;
+      this.funds += this.win;
+      this.bet = 0;
+      this.drawFunds();
+     
+//      if(this.funds==0)
+//        $('#endModal').modal('show');
+    },
+    clearCardArea:function(){
+      this.ctx.clearRect(0,0,this.cardWidth*2,this.cardHeight*1.5);
+      this.ctx.clearRect(this.canvas.width/2,this.canvas.height/2-this.cardHeight/2,this.cardWidth*2,this.cardHeight*1.5);
+    },
+    stand:function(){
+      if(this.started){
+        this.flipCards('dealer')(true);
+        var handCount;
+        while((handCount =this.checkHand(JSON.parse(JSON.stringify(this.dealerHand)))) <17){
+          this.dealerHand.push(new Card(this.dealerHand.length,0,this,this.drawCardHandlerDealer,this.clickCardHandler,this.deck.dealCard()));
+          this.flipCards('dealer')(true);
+          this.drawDealerCounts();
+        }
+        this.checkHands();
+      }
+    },
+    checkHand:function(hand){
+      hand.sort(function(a,b){return b.card.x-a.card.x;});
+      var count = hand.reduce(function(a,d){
+        var val = d.card.x+1;
+        if(val > 10)
+          val = 10;
+        if(val==1&&a+11 <= 21)
+          val=11;
+        
+        return a+val;
+        },0);
       if(count >21)
         console.log('busted');
+      return count;
     },
     drawFunds:function(){
       this.ctx.save();
